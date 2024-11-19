@@ -1,6 +1,6 @@
 import elevator from "./assets/elevator.webp";
 import userSprit from "./assets/user.png";
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import "./App.css";
 
@@ -11,34 +11,51 @@ function App() {
     { currentStage: 0, targetStage: 3, state: "waiting" },
     { currentStage: 1, targetStage: 4, state: "taked" }
   ]);
-  const personsTaked = personsStages.filter((person) => person.state === "taked");
+
+  const elevatorDirection = useRef("up"); // "down" | "up"
+
+  const getElevatorTargetStage = () => {
+    if (elevatorDirection.current === "up") {
+      return Math.min(...personsStages.map((person) => person.targetStage));
+    } else {
+      return Math.max(...personsStages.map((person) => person.targetStage));
+    }
+  };
+
+  const movingElevator = () => {
+    const targetStage = getElevatorTargetStage();
+
+    if (currentElevatorStage === targetStage) {
+      elevatorDirection.current = elevatorDirection.current === "up" ? "down" : "up";
+    }
+
+    if (elevatorDirection.current === "up") {
+      if (currentElevatorStage < stages - 1) {
+        setCurrentElevatorStage(prev => prev + 1);
+      }
+    } else {
+      if (currentElevatorStage > 0) {
+        setCurrentElevatorStage(prev => prev - 1);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      movingElevator();
+    }, 500);
+    return () => clearInterval(interval);
+  }, [currentElevatorStage]);
 
   return (
     <div className="App">
       <div className="flex flex-col-reverse relative">
-        <div className="elevator h-[100px] absolute">
+        <div
+          className="elevator h-[100px] absolute"
+          style={{ top: `${(stages - currentElevatorStage - 1) * 100}px` }}
+        >
           <img src={elevator} alt="elevator" className="h-[100px]" />
         </div>
-        {Array.from({ length: stages }).map((_, index) => {
-          const currentStagePersons = personsStages.filter(
-            (person) => person.currentStage === index && person.state === "waiting"
-          );
-          return (
-            <div key={index} className="stage">
-              <div className="stage-elevator w-[400px] h-[100px] flex justify-end">
-                <div className="persons flex items-end">
-                  {currentStagePersons.map((person) => {
-                    return (
-                      <div key={person.currentStage} className="person relative">
-                        <img src={userSprit} alt="user" className="h-[70px]" />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
